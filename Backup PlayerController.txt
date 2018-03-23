@@ -1,0 +1,120 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PlayerController : MonoBehaviour {
+
+	public float moveSpeed;
+	private Rigidbody2D myRigidbody;
+
+	public Transform groundCheck;
+	public float groundCheckRadius; 
+	public LayerMask whatIsGround;
+	public bool isGrounded;
+
+	private Animator myAnime;
+
+    public int currHealth;
+    public int maxHealth = 100;
+
+	//Variables needed for jumping
+	public float jumpShortSpeed = 3f;   // Velocity for the lowest jump
+	public float jumpSpeed = 30f;          // Velocity for the highest jump
+	bool jump = false;
+	bool jumpCancel = false;
+	//bool grounded = false;
+
+
+	// Use this for initialization
+	void Start () {
+		myRigidbody = GetComponent<Rigidbody2D>();
+		myAnime = GetComponent<Animator> ();
+
+
+        currHealth = maxHealth;
+
+		//respawnPosition = transform.position; //default spawning before checkpoints
+
+		//theLevelManager = FindObjectOfType<LevelManager> ();
+	}
+
+	// Update is called once per frame
+	void Update () {
+
+		//Check if player is off ground to not jump again
+		isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, whatIsGround);
+
+		//Control the movement of character
+		if (Input.GetAxisRaw ("Horizontal") > 0f) {
+			myRigidbody.velocity = new Vector3 (moveSpeed, myRigidbody.velocity.y, 0f);
+			transform.localScale = new Vector3 (1f,1f,1f); 		//Flip player when heading right
+		} else if (Input.GetAxisRaw ("Horizontal") < 0f) {
+			myRigidbody.velocity = new Vector3 (-moveSpeed, myRigidbody.velocity.y, 0f);
+			transform.localScale = new Vector3 (-1f, 1f, 1f); 	//Flip player when heading left
+		} else { 
+			myRigidbody.velocity = new Vector3 (0f, myRigidbody.velocity.y, 0f);
+		}
+
+		//Make jump available to player if isGrounded is true
+		if (Input.GetButtonDown("Jump") && isGrounded)   // Player starts pressing the button
+			jump = true;
+		if (Input.GetButtonUp("Jump") && !isGrounded)     // Player stops pressing the button
+			jumpCancel = true;
+		
+        //Health if functions 
+        if (currHealth > maxHealth)
+        {
+            currHealth = maxHealth;
+        }
+
+        if (currHealth <= 0)
+        {
+            Die();
+        }
+
+		//Set Animations made in Unity to whoever holds this script
+		myAnime.SetFloat ("Speed", Mathf.Abs (myRigidbody.velocity.x));
+		myAnime.SetBool ("Grounded", isGrounded);
+
+	}
+
+	void FixedUpdate()
+	{
+		// Normal jump (full speed)
+		if (jump)
+		{
+			myRigidbody.velocity = new Vector2(myRigidbody.velocity.x, jumpSpeed);
+			jump = false;
+		}
+		// Cancel the jump when the button is no longer pressed
+		if (jumpCancel)
+		{
+			if (myRigidbody.velocity.y > jumpShortSpeed)
+				myRigidbody.velocity = new Vector2(myRigidbody.velocity.x, jumpShortSpeed);
+			jumpCancel = false;
+		}
+	}
+
+    void Die()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+}
+
+
+	/*void OnTriggerEnter2D(Collider2D other) {
+		if (other.tag == "KillPlane") {
+			//gameObject.SetActive (false); this will deactivate the player 
+
+			//transform.position = respawnPosition; //sends player back to checkpoint if dies
+
+			theLevelManager.Respawn ();
+		}
+
+		if (other.tag == "Checkpoint") {
+			respawnPosition = other.transform.position;
+		}
+	}*/
+
+
